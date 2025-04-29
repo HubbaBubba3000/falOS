@@ -1,6 +1,7 @@
 #pragma once
 #include "file.h"
 #include <cstdarg>
+#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <string>
@@ -8,24 +9,28 @@ namespace FS {
     class File;
 
     struct Folder_t {
-        int16_t parentid;
-        std::string name;
-        int8_t namesize;
         int16_t id;
+        int16_t parentid;
         bool rootonly;
+        int8_t namesize;
+        char* name;
     };
 
     class Folder {
     public:
-      Folder(std::string* name) : name(name) {}
+    Folder(std::string* name) : name(name) {}
+    Folder(char* str) {
+        name = new std::string(str);
+    }
       ~Folder() {
-          folders.erase(folders.cbegin());
-          files.erase(files.cbegin());
+        //  folders.erase(folders.cbegin());
+        // files.erase(files.cbegin());
           delete name;
       }
+      int id;
       Folder* parent;
-      std::list<Folder*> folders;
-      std::list<File*> files;
+    //  std::list<Folder*> folders;
+    // std::list<File*> files;
 
       std::string* name;
       bool root_only;

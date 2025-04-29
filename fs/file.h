@@ -1,5 +1,6 @@
 #pragma once
 #include "folder.h"
+#include <cstddef>
 #include <cstdint>
 #include <string>
 namespace FS {
@@ -7,8 +8,8 @@ namespace FS {
 
     struct File_t {
         int16_t parentid;
-        std::string name;
         int8_t namesize;
+        char* name;
         int32_t memptr;
         bool is_exec;
         bool root_only;
@@ -27,6 +28,7 @@ namespace FS {
         bool is_exec = false;
         bool root_only = false;
         int memptr;
+        size_t filesize;
         std::string* getpath();
 
     };

@@ -1,6 +1,9 @@
 #pragma once
 #include "folder.h"
+#include <cstddef>
 #include <string>
+#include <vector>
+using std::pmr::vector;
 namespace FS {
 
     class FS {
@@ -13,6 +16,7 @@ namespace FS {
 
         void loadMetaFromFile();
         unsigned char* loadDataFromfile(File* file);
+
 
         void saveAllMeta();
         void saveMetaFolder(Folder* f);
@@ -31,17 +35,16 @@ namespace FS {
         File* renameFile(File* file, std::string* new_name);
         void deleteFile(File* file);
 
-
+        vector<uint8_t> serializeFolder(Folder &folder);
+        Folder_t deserializeFolder(vector<uint8_t> data);
 
     private:
-    // TODO implement serialization
-        void serializeFolder(Folder* folder);
-        void serializeFile(File* file);
-        void serializeFS();
 
-        Folder* deserializeFolder();
-        File* deserializeFile();
-        void deserializeFS();
+
+    // TODO implement serialization
+        size_t  serializeFile(File* file);
+
+        File_t deserializeFile(char* data);
     };
 
 }
