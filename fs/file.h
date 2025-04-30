@@ -7,18 +7,19 @@ namespace FS {
     class Folder;
 
     struct File_t {
-        int16_t parentid;
-        int8_t namesize;
-        char* name;
-        int32_t memptr;
+        uint16_t parentid;
         bool is_exec;
         bool root_only;
-        int16_t filesize;
+        uint32_t memptr;    // max storage 4 gib
+        uint16_t filesize; //max 64kib
+        uint8_t namesize;
+        char* name;
     };
 
     class File {
         public:
         File(std::string* name) : name(name) {}
+        File(char* name) : name(new std::string(name)) {}
         ~File() {
             delete name;
             //TODO delete data file from storage

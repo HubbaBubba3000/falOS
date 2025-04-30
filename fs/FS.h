@@ -1,7 +1,9 @@
 #pragma once
 #include "folder.h"
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 using std::pmr::vector;
 namespace FS {
@@ -36,15 +38,14 @@ namespace FS {
         void deleteFile(File* file);
 
         vector<uint8_t> serializeFolder(Folder &folder);
-        Folder_t deserializeFolder(vector<uint8_t> data);
+        Folder deserializeFolder(vector<uint8_t> data);
 
+        vector<uint8_t> serializeFile(File &file);
+
+        File_t deserializeFile(vector<uint8_t> data);
     private:
+        void CreateFS();
 
-
-    // TODO implement serialization
-        size_t  serializeFile(File* file);
-
-        File_t deserializeFile(char* data);
     };
 
 }

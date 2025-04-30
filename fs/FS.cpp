@@ -1,11 +1,8 @@
 #include "FS.h"
 #include "file.h"
 #include "folder.h"
-// #include <cmath>
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-// #include <cstring>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -13,23 +10,38 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
 using std::pmr::vector;
 
 namespace FS {
+    inline bool fileIsExist (const std::string& name) {
+        struct stat buffer;
+        return (stat (name.c_str(), &buffer) == 0);
+    }
 
     FS::FS() {
         meta = "meta.bin";
         data = "data.bin";
+
+        if (fileIsExist(meta)) {
+            std::cout << "sys : meta doesnt exists , start creating file system";
+            CreateFS();
+        }
     }
     FS::~FS() {
 
     }
+
+    void FS::CreateFS() {
+
+    }
+
 //not implemented
 #pragma region file
 
+
     void FS::loadMetaFromFile() {
         std::ifstream ms(meta);
-
         if (!ms.is_open()) {
             std::cout << "failed to open meta file";
             return;
@@ -80,6 +92,29 @@ Folder Folder_tToFolder(Folder_t* folder) {
     return *f;
 }
 
+File_t FileToFile_t(File* f) {
+    File_t t {
+        f->parent ? (uint16_t)(f->parent->id) : (uint16_t)-1,
+        f->is_exec,
+        f->root_only,
+        (uint32_t)f->memptr,
+        (uint16_t)f->filesize,
+        (uint8_t)f->name->size(),
+        f->name->data()
+    };
+    return t;
+}
+
+File File_tToFile(File_t* t) {
+    File f = *new File(t->name);
+    f.is_exec = t->is_exec;
+    f.root_only = t->root_only;
+    f.memptr = t->memptr;
+    f.filesize = t->filesize;
+    //f.parent TODO
+    return f;
+}
+
 vector<uint8_t> FS::serializeFolder(Folder &folder) {
     Folder_t f = folderToFolder_t(&folder);
     vector<uint8_t> buffer;
@@ -96,7 +131,7 @@ vector<uint8_t> FS::serializeFolder(Folder &folder) {
     buffer.insert(buffer.end(), ptr, ptr + f.namesize);
     return buffer;
 }
-Folder_t FS::deserializeFolder(vector<uint8_t> data) {
+Folder FS::deserializeFolder(vector<uint8_t> data) {
     Folder_t t ;
     size_t offset = 0;
 
@@ -104,50 +139,89 @@ Folder_t FS::deserializeFolder(vector<uint8_t> data) {
         throw std::runtime_error("Invalid buffer: id overflow");
     }
     memcpy(&t.id, data.data() + offset,sizeof(t.id));
-    std::cout << t.id;
     offset += sizeof(t.id);
     if (offset + sizeof(t.parentid) > data.size()) {
         throw std::runtime_error("Invalid buffer: pid overflow");
     }
     memcpy(&t.parentid, data.data() + offset,sizeof(t.parentid));
-    std::cout << t.parentid;
     offset += sizeof(t.parentid);
     if (offset + sizeof(t.rootonly) > data.size()) {
         throw std::runtime_error("Invalid buffer: rootbool overflow");
     }
     memcpy(&t.rootonly, data.data() + offset,sizeof(t.rootonly));
-    std::cout << t.rootonly;
     offset += sizeof(t.rootonly);
     if (offset + sizeof(t.namesize) > data.size()) {
         throw std::runtime_error("Invalid buffer: namesize overflow");
     }
     memcpy(&t.namesize, data.data() + offset,sizeof(t.namesize));
-    std::cout << t.namesize;
     offset += sizeof(t.namesize);
     if (offset + t.namesize > data.size()) {
         throw std::runtime_error("Invalid buffer: name overflow");
     }
-    t.name = new char[t.namesize + 1]; // +1 для нуль-терминатора
-       memcpy(t.name, data.data() + offset, t.namesize);
-       t.name[t.namesize] = '\0'; // Добавляем нуль-терминатор
-       offset += t.namesize;
-   std::cout << t.name;
-    return t;
+    t.name = new char[t.namesize + 1];
+    memcpy(t.name, data.data() + offset, t.namesize);
+    t.name[t.namesize] = '\0';
+    return Folder_tToFolder(&t);
 }
 
-//пускай диса сам пишет мне лень
-size_t  FS::serializeFile(File* file) {
-    // конвертировать file в file_t
-    // вычислить размер типа
-    // инициализировать буффер и указатель на память
-    // поочередно копировать поля в буффер
-    // вернуть размер буфера
-    //
-    return 0;
+vector<uint8_t> FS::serializeFile(File &file) {
+    File_t f = FileToFile_t(&file);
+    vector<uint8_t> buffer;
+    uint8_t* ptr;
+    ptr = reinterpret_cast<uint8_t*>(&f.parentid);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.parentid));
+    ptr = reinterpret_cast<uint8_t*>(&f.is_exec);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.is_exec));
+    ptr = reinterpret_cast<uint8_t*>(&f.root_only);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.root_only));
+    ptr = reinterpret_cast<uint8_t*>(&f.memptr);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.memptr));
+    ptr = reinterpret_cast<uint8_t*>(&f.filesize);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.filesize));
+    ptr = reinterpret_cast<uint8_t*>(&f.namesize);
+    buffer.insert(buffer.end(), ptr, ptr + sizeof(f.namesize));
+    ptr = reinterpret_cast<uint8_t*>(f.name);
+    buffer.insert(buffer.end(), ptr, ptr + f.namesize);
+    return buffer;
 }
 
-File_t FS::deserializeFile(char* data) {
-    File_t t;
+File_t FS::deserializeFile(vector<uint8_t> data) {
+    File_t t ;
+    size_t offset = 0;
+
+    if (offset + sizeof(t.parentid) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.parentid, data.data() + offset,sizeof(t.parentid));
+    offset += sizeof(t.parentid);
+    if (offset + sizeof(t.is_exec) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.is_exec, data.data() + offset,sizeof(t.is_exec));
+    offset += sizeof(t.is_exec);
+    if (offset + sizeof(t.root_only) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.root_only, data.data() + offset,sizeof(t.root_only));
+    offset += sizeof(t.root_only);
+    if (offset + sizeof(t.memptr) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.memptr, data.data() + offset,sizeof(t.memptr));
+    offset += sizeof(t.memptr);
+    if (offset + sizeof(t.filesize) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.filesize, data.data() + offset,sizeof(t.filesize));
+    offset += sizeof(t.filesize);
+    if (offset + sizeof(t.namesize) > data.size()) {
+        throw std::runtime_error("Invalid buffer: pid overflow");
+    }
+    memcpy(&t.namesize, data.data() + offset,sizeof(t.namesize));
+    offset += sizeof(t.namesize);
+    t.name = new char[t.namesize + 1];
+    memcpy(t.name, data.data() + offset, t.namesize);
+    t.name[t.namesize] = '\0';
     return t;
 }
 
