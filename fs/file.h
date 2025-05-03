@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-namespace FS {
+namespace fs {
     class Folder;
 
     struct File_t {

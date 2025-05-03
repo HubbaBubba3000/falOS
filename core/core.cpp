@@ -2,19 +2,28 @@
 #include "core.h"
 #include "commandmanager.h"
 #include <iostream>
+#include "../fs/FS.h"
 #include <string>
 
 using namespace core;
 
 Core::Core() {
-    cm = new core::CommandManager();
-   // user = getUser("user.cfg");
     m_shutdown = false;
+    boot();
 }
 
 Core::~Core() {
     delete cm;
 }
+
+void Core::boot() {
+    fs = new fs::FS();
+
+    user = getUser("user.cfg");
+
+    cm = new core::CommandManager();
+}
+
 //TODO implement hiding iser input (win/linux)
 bool Core::authentification() {
     if (!user) {

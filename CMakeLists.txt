@@ -18,3 +18,5 @@ add_executable(FOS main.cpp
     core/commandmanager.cpp
     core/user.h
 )
+
+target_link_libraries(FOS FS)

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <list>
 #include <string>
-namespace FS {
+namespace fs {
     class File;
 
     struct Folder_t {
@@ -23,14 +23,14 @@ namespace FS {
         name = new std::string(str);
     }
       ~Folder() {
-        //  folders.erase(folders.cbegin());
-        // files.erase(files.cbegin());
+          folders.erase(folders.cbegin());
+          files.erase(files.cbegin());
           delete name;
       }
       int id;
       Folder* parent;
-    //  std::list<Folder*> folders;
-    // std::list<File*> files;
+     std::list<Folder*> folders;
+     std::list<File*> files;
 
       std::string* name;
       bool root_only;

@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <vector>
 using std::pmr::vector;
-namespace FS {
+namespace fs {
 
     class FS {
     public:
@@ -44,6 +44,7 @@ namespace FS {
 
         File_t deserializeFile(vector<uint8_t> data);
     private:
+        int m_id = 0;
         void CreateFS();
 
     };

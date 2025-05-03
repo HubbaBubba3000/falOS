@@ -13,10 +13,13 @@
 #include <sys/stat.h>
 using std::pmr::vector;
 
-namespace FS {
+namespace fs {
     inline bool fileIsExist (const std::string& name) {
         struct stat buffer;
         return (stat (name.c_str(), &buffer) == 0);
+    }
+    inline void sysinfo(std::string s) {
+        std::cout << "sys: " << s << "\n";
     }
 
     FS::FS() {
@@ -24,7 +27,7 @@ namespace FS {
         data = "data.bin";
 
         if (fileIsExist(meta)) {
-            std::cout << "sys : meta doesnt exists , start creating file system";
+            sysinfo("meta doesnt exists , start creating file system");
             CreateFS();
         }
     }
@@ -33,7 +36,10 @@ namespace FS {
     }
 
     void FS::CreateFS() {
-
+        createFolder(nullptr,new std::string ("root"));
+        createFolder(root, new std::string("bin"));
+        createFolder(root, new std::string("usr"));
+        createFolder(root, new std::string("cfg"));
     }
 
 //not implemented
@@ -72,6 +78,7 @@ namespace FS {
     // void FS::saveMetaFile(File* f) {}
     void FS::saveDataFile() {}
 #pragma endregion
+
 #pragma region serializing
 
 Folder_t folderToFolder_t(Folder* folder) {
@@ -230,9 +237,10 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
 #pragma region crud
     Folder* FS::createFolder(Folder* parent, std::string* name) {
         Folder* f = new Folder(name);
-        f->id = 1;
+        f->id = ++m_id;
         f->root_only = false;
         f->parent = parent;
+        parent->folders.push_back(f);
         return f;
     }
     Folder* FS::editFolderName(Folder* folder, std::string* new_name) {
@@ -240,6 +248,7 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         return folder;
     }
     void FS::deleteFolder(Folder* folder) {
+        folder->parent->folders.remove(folder);
         delete folder;
     }
 
@@ -248,6 +257,8 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         f->parent = parent;
         f->root_only = false;
         f->is_exec = false;
+        parent->files.push_back(f);
+
         return f;
     }
     File* FS::renameFile(File* file, std::string* new_name) {
@@ -255,6 +266,7 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         return file;
     }
     void FS::deleteFile(File* file) {
+        file->parent->files.remove(file);
         delete file;
     }
 #pragma endregion
