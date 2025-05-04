@@ -14,8 +14,8 @@ add_executable(FOS main.cpp
     core/core.h
     core/executor.h
     core/executor.cpp
-    core/commandmanager.h
-    core/commandmanager.cpp
+    core/terminal.h
+    core/terminal.cpp
     core/user.h
 )
 

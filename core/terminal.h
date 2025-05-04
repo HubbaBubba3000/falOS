@@ -4,17 +4,18 @@
 #include <string>
 #include <unordered_map>
 namespace core {
-    typedef std::function<int()> func_t;
+    typedef std::function<int(std::string)> func_t;
     typedef std::unordered_map<std::string, func_t> command_map;
-    class CommandManager {
+
+    class Terminal {
 
         public:
             std::string command;
 
             command_map commands = {};
 
-            CommandManager();
-            ~CommandManager();
+            Terminal();
+            ~Terminal();
 
             void searchcommand(std::string* command);
 

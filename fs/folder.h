@@ -18,19 +18,24 @@ namespace fs {
 
     class Folder {
     public:
-    Folder(std::string* name) : name(name) {}
+    Folder(std::string* name) : name(name) {
+        folders = new std::list<Folder*>();
+        files = new std::list<File*>();
+    }
     Folder(char* str) {
         name = new std::string(str);
+        folders = new std::list<Folder*>();
+        files = new std::list<File*>();
     }
       ~Folder() {
-          folders.erase(folders.cbegin());
-          files.erase(files.cbegin());
+          folders->erase(folders->cbegin());
+          files->erase(files->cbegin());
           delete name;
       }
       int id;
       Folder* parent;
-     std::list<Folder*> folders;
-     std::list<File*> files;
+     std::list<Folder*>* folders;
+     std::list<File*>* files;
 
       std::string* name;
       bool root_only;

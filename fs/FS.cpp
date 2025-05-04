@@ -26,17 +26,18 @@ namespace fs {
         meta = "meta.bin";
         data = "data.bin";
 
-        if (fileIsExist(meta)) {
+        if (!fileIsExist(meta)) {
             sysinfo("meta doesnt exists , start creating file system");
             CreateFS();
         }
+
     }
     FS::~FS() {
 
     }
 
     void FS::CreateFS() {
-        createFolder(nullptr,new std::string ("root"));
+        root = createFolder(nullptr,new std::string("root"));
         createFolder(root, new std::string("bin"));
         createFolder(root, new std::string("usr"));
         createFolder(root, new std::string("cfg"));
@@ -240,7 +241,8 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         f->id = ++m_id;
         f->root_only = false;
         f->parent = parent;
-        parent->folders.push_back(f);
+        if (parent)
+            parent->folders->push_back(f);
         return f;
     }
     Folder* FS::editFolderName(Folder* folder, std::string* new_name) {
@@ -248,7 +250,7 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         return folder;
     }
     void FS::deleteFolder(Folder* folder) {
-        folder->parent->folders.remove(folder);
+        folder->parent->folders->remove(folder);
         delete folder;
     }
 
@@ -257,7 +259,7 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         f->parent = parent;
         f->root_only = false;
         f->is_exec = false;
-        parent->files.push_back(f);
+        parent->files->push_back(f);
 
         return f;
     }
@@ -266,7 +268,7 @@ File_t FS::deserializeFile(vector<uint8_t> data) {
         return file;
     }
     void FS::deleteFile(File* file) {
-        file->parent->files.remove(file);
+        file->parent->files->remove(file);
         delete file;
     }
 #pragma endregion

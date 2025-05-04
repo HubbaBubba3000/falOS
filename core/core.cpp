@@ -1,11 +1,15 @@
 
 #include "core.h"
-#include "commandmanager.h"
+#include "terminal.h"
 #include <iostream>
 #include "../fs/FS.h"
 #include <string>
 
 using namespace core;
+
+inline void sysinfo(const char* s) {
+    std::cout << "sys: " << s << "\n";
+}
 
 Core::Core() {
     m_shutdown = false;
@@ -14,21 +18,31 @@ Core::Core() {
 
 Core::~Core() {
     delete cm;
+    delete fs;
 }
 
 void Core::boot() {
-    fs = new fs::FS();
-
+    fs = new fs::FS(); // generate root not nullable pointer
+    m_current_folder = fs->root;
+    std::cout << m_current_folder->name << "\n";
     user = getUser("user.cfg");
 
-    cm = new core::CommandManager();
+    cm = new core::Terminal();
 }
 
 //TODO implement hiding iser input (win/linux)
 bool Core::authentification() {
+    std::cout << " _______ _______ _       _______ _________" << std::endl;
+    std::cout << " (  ____ (  ___  |\\     (  ___  |  ____ |" << std::endl;
+    std::cout << " | (    \\/ (   ) | (     | (   ) | (    \\/" << std::endl;
+    std::cout << " | (__   | (___) | |     | |   | | (_____ " << std::endl;
+    std::cout << " |  __)  |  ___  | |     | |   | (_____  )" << std::endl;
+    std::cout << " | (     | (   ) | |     | |   | |     ) |" << std::endl;
+    std::cout << " | )     | )   ( | (____/\\ (___) /\\____) |" << std::endl;
+    std::cout << " |/      |/     \(_______(_______)_______)" << std::endl;
+
     if (!user) {
         std::string name, pwd, rootpwd;
-
         std::cout << "welcome to falOS \n please enter ur name: ";
         std::cin >> name;
         std::cout << "enter ur password :  ";
@@ -56,25 +70,37 @@ void Core::shutdown(){
 }
 bool Core::checkroot(std::string* pwd) {
     if (user->isroot) {
-        std::cout << "sys: u already root";
+        sysinfo("u already root");
         return true;
     }
     if (user->root_pwd == *pwd)
         return true;
-    std::cout << "sys: incorrect password";
+    sysinfo("incorrect password");
     return false;
 }
+void Core::getroot(std::string* pwd) {
+    if (checkroot(pwd)) {
+        user->isroot = true;
+        sysinfo("now you root!");
+    }
+}
 
+std::string* Core::currentDirectory() {
+    return m_current_folder->name;
+}
+// void Core::setdirectory() {
+//     m_current_folder =
+// }
 void Core::run() {
 
     while (!m_shutdown) {
         std::cout << ">" ;
-        std::cin >> cm->command;
+        std::getline(std::cin, cm->command);
         cm->searchcommand(&cm->command);
 
     }
 
-    std::cout << "falOS shutdown..";
+    std::cout << "falOS shutdown.. ";
 }
 
 User* Core::getUser(std::string path ) {

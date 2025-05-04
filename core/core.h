@@ -1,5 +1,5 @@
 #pragma once
-#include "commandmanager.h"
+#include "terminal.h"
 #include "user.h"
 #include "../fs/FS.h"
 #include <string>
@@ -14,16 +14,20 @@ namespace core {
             bool authentification();
             void run();
             bool checkroot(std::string* pwd);
-
-            static void shutdown();
+            void getroot(std::string* pwd);
+            void shutdown();
+            std::string* currentDirectory();
 
         private:
-            static inline bool m_shutdown;
+            bool m_shutdown;
             core::User* user;
-            core::CommandManager* cm;
+            core::Terminal* cm;
             fs::FS* fs;
+            fs::Folder* m_current_folder;
             //get userdata from config
             User* getUser(std::string path);
             User* newUser(std::string* name, std::string* pwd, std::string* root_password );
     };
+
+    inline Core g_falos_core; // global variable
 }
