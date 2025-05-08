@@ -17,13 +17,13 @@ namespace core {
             void getroot(std::string* pwd);
             void shutdown();
             std::string* currentDirectory();
+            fs::Folder* m_current_folder;
+            fs::FS* fs;
 
         private:
             bool m_shutdown;
             core::User* user;
             core::Terminal* cm;
-            fs::FS* fs;
-            fs::Folder* m_current_folder;
             //get userdata from config
             User* getUser(std::string path);
             User* newUser(std::string* name, std::string* pwd, std::string* root_password );

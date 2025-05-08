@@ -1,6 +1,7 @@
 
 #include "core.h"
 #include "terminal.h"
+#include <cstdlib>
 #include <iostream>
 #include "../fs/FS.h"
 #include <string>
@@ -22,7 +23,8 @@ Core::~Core() {
 }
 
 void Core::boot() {
-    fs = new fs::FS(); // generate root not nullable pointer
+    fs = new fs::FS();
+    sysinfo("fs inited");
     m_current_folder = fs->root;
     std::cout << m_current_folder->name << "\n";
     user = getUser("user.cfg");
@@ -86,7 +88,7 @@ void Core::getroot(std::string* pwd) {
 }
 
 std::string* Core::currentDirectory() {
-    return m_current_folder->name;
+    return &m_current_folder->name;
 }
 // void Core::setdirectory() {
 //     m_current_folder =

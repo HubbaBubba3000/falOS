@@ -19,6 +19,8 @@ namespace fs {
         void loadMetaFromFile();
         unsigned char* loadDataFromfile(File* file);
 
+        Folder* getFolderByPath(std::string path, Folder* o = nullptr);
+        std::string getPathByFolder(Folder* folder);
 
         void saveAllMeta();
         void saveMetaFolder(Folder* f);
