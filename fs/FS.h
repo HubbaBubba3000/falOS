@@ -2,6 +2,8 @@
 #include "folder.h"
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <ostream>
 #include <string>
 #include <sys/types.h>
 #include <vector>
@@ -31,7 +33,7 @@ namespace fs {
 
         Folder* root;
 
-        Folder* createFolder(Folder* parent, std::string* name);
+        Folder* createFolder(Folder* parent, std::string name);
         Folder* editFolderName(Folder* folder, std::string* new_name);
         void deleteFolder(Folder* folder);
 
@@ -39,8 +41,8 @@ namespace fs {
         File* renameFile(File* file, std::string* new_name);
         void deleteFile(File* file);
 
-        vector<uint8_t> serializeFolder(Folder &folder);
-        Folder deserializeFolder(vector<uint8_t> data);
+        vector<uint8_t> serializeFolder(Folder *folder);
+        Folder_t deserializeFolder(std::ifstream& in);
 
         vector<uint8_t> serializeFile(File &file);
 
@@ -48,6 +50,10 @@ namespace fs {
     private:
         int m_id = 0;
         void CreateFS();
+        Folder* GetFolderById(int id, Folder* p);
+        void serialize(Folder* f, std::ofstream &out);
+        Folder* deserialize(uint8_t* data, std::ifstream &in);
+
 
     };
 

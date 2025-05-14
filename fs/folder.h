@@ -2,38 +2,39 @@
 #include "file.h"
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <list>
 #include <string>
 namespace fs {
     class File;
 
     struct Folder_t {
-        int16_t id;
-        int16_t parentid;
+        uint16_t id;
+        uint16_t parentid;
         bool rootonly;
-        int8_t namesize;
+        uint8_t namesize;
         char* name;
     };
 
     class Folder {
     public:
     Folder(std::string name) : name(name) {
-        folders = new std::list<Folder*>();
-        files = new std::list<File*>();
+        folders = *new std::list<Folder*>();
+        files = *new std::list<File*>();
     }
-    Folder(char* str) {
-        name = *new std::string(str);
-        folders = new std::list<Folder*>();
-        files = new std::list<File*>();
+    Folder(const char* str) : name(str) {
+        folders = *new std::list<Folder*>();
+        files = *new std::list<File*>();
     }
+   // Folder(Folder_t t) : id(t.id) :
       ~Folder() {
-          folders->erase(folders->cbegin());
-          files->erase(files->cbegin());
+          // folders.erase(folders.cbegin());
+          // files.erase(files.cbegin());
       }
       int id;
       Folder* parent;
-     std::list<Folder*>* folders;
-     std::list<File*>* files;
+     std::list<Folder*> folders;
+     std::list<File*> files;
 
       std::string name;
       bool root_only;

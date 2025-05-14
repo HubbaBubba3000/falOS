@@ -14,10 +14,6 @@ inline void sysinfo(const char* s) {
 
 #pragma region commands
 
-    int help(std::string p) {
-
-        return 0;
-    }
     int shut(std::string p) {
         g_falos_core.shutdown();
         return 0;
@@ -38,19 +34,19 @@ inline void sysinfo(const char* s) {
         return 0;
     }
     int ls(std::string p) {
-        auto *folderlist = g_falos_core.m_current_folder->folders;
-        if (!folderlist->empty())
-            for(auto f : *folderlist)
+        auto folderlist = g_falos_core.m_current_folder->folders;
+        if (!folderlist.empty())
+            for(auto f : folderlist)
                 std::cout << f->name << "(" << f << ") ";
         std::cout << "\n \n";
-        auto *filelist = g_falos_core.m_current_folder->files;
-        if (!filelist->empty())
-            for(auto f : *filelist)
+        auto filelist = g_falos_core.m_current_folder->files;
+        if (!filelist.empty())
+            for(auto f : filelist)
                 std::cout << *f->name << " ";
         return 0;
     }
     int mkdir(std::string p) {
-        auto f = g_falos_core.fs->createFolder(g_falos_core.m_current_folder, &p);
+        auto f = g_falos_core.fs->createFolder(g_falos_core.m_current_folder, p);
         std::cout << f->parent->name << f->name;
         return 0;
     }
@@ -73,7 +69,7 @@ inline void sysinfo(const char* s) {
 #pragma endregion
 
 Terminal::Terminal() {
-    commands["help"] = help;
+   // commands["help"] = help;
     commands["shut"] = shut;
     commands["echo"] = echo;
     commands["gr"] = gr;

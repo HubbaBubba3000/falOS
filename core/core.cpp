@@ -35,7 +35,7 @@ void Core::boot() {
 //TODO implement hiding iser input (win/linux)
 bool Core::authentification() {
     std::cout << " _______ _______ _       _______ _________" << std::endl;
-    std::cout << " (  ____ (  ___  |\\     (  ___  |  ____ |" << std::endl;
+    std::cout << " (  ____ (  ___  |\\      (  ___  |  ____ |" << std::endl;
     std::cout << " | (    \\/ (   ) | (     | (   ) | (    \\/" << std::endl;
     std::cout << " | (__   | (___) | |     | |   | | (_____ " << std::endl;
     std::cout << " |  __)  |  ___  | |     | |   | (_____  )" << std::endl;
@@ -90,9 +90,6 @@ void Core::getroot(std::string* pwd) {
 std::string* Core::currentDirectory() {
     return &m_current_folder->name;
 }
-// void Core::setdirectory() {
-//     m_current_folder =
-// }
 void Core::run() {
 
     while (!m_shutdown) {
