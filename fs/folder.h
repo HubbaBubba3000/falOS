@@ -26,11 +26,7 @@ namespace fs {
         folders = *new std::list<Folder*>();
         files = *new std::list<File*>();
     }
-   // Folder(Folder_t t) : id(t.id) :
-      ~Folder() {
-          // folders.erase(folders.cbegin());
-          // files.erase(files.cbegin());
-      }
+      ~Folder() { }
       int id;
       Folder* parent;
      std::list<Folder*> folders;

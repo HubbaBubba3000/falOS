@@ -1,7 +1,6 @@
 
 #include "core.h"
 #include "terminal.h"
-#include <cstdlib>
 #include <iostream>
 #include "../fs/FS.h"
 #include <string>
@@ -26,9 +25,7 @@ void Core::boot() {
     fs = new fs::FS();
     sysinfo("fs inited");
     m_current_folder = fs->root;
-    std::cout << m_current_folder->name << "\n";
     user = getUser("user.cfg");
-
     cm = new core::Terminal();
 }
 
@@ -57,14 +54,18 @@ bool Core::authentification() {
     }
     std::string pwd;
     std::cout << "welcome back " << user->name;
-    std::cout << "enter ur password: ";
-    std::cin >> pwd ;
-    if (pwd != user->pwd) { // implement hash comparsion
-        std::cout << "invalid password";
-        return false;
+    int tries = 3;
+    while (tries > 0) {
+        std::cout << "enter ur password: ";
+        std::cin >> pwd ;
+        if (pwd != user->pwd) { // implement hash comparsion
+            std::cout << "invalid password";
+            tries--;
+        }
+        else return true;
     }
-
-    return true;
+    sysinfo("attempts was left.. shutdown");
+    return false;
 }
 
 void Core::shutdown(){
@@ -93,7 +94,7 @@ std::string* Core::currentDirectory() {
 void Core::run() {
 
     while (!m_shutdown) {
-        std::cout << ">" ;
+        std::cout << m_current_folder->name <<  ">" ;
         std::getline(std::cin, cm->command);
         cm->searchcommand(&cm->command);
 

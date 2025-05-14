@@ -18,14 +18,13 @@ namespace fs {
 
     class File {
         public:
-        File(std::string* name) : name(name) {}
-        File(char* name) : name(new std::string(name)) {}
+        File(std::string name) : name(name) {}
+        File(char* name) : name(std::string(name)) {}
         ~File() {
-            delete name;
             //TODO delete data file from storage
         }
         Folder* parent;
-        std::string* name;
+        std::string name;
         bool is_exec = false;
         bool root_only = false;
         int memptr;

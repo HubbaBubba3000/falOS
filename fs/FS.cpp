@@ -3,15 +3,14 @@
 #include "folder.h"
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <fstream>
+#include <ios>
 #include <iostream>
-//#include <ostream>
-#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <sys/stat.h>
-#include <utility>
+#include <unordered_map>
+#include <variant>
 #include <vector>
 using std::pmr::vector;
 
@@ -29,6 +28,7 @@ namespace fs {
         if (!fileIsExist(meta)) {
             sysinfo("meta doesnt exists , start creating file system");
             CreateFS();
+            saveAllMeta();
         }
         else {
             loadMetaFromFile();
@@ -42,6 +42,7 @@ namespace fs {
         createFolder(root, "usr");
         createFolder(root, "cfg");
         createFolder(root->folders.back(), "test");// to cfg
+        createFile(root->folders.front(), "fil.e"); // bin
     }
 
     Folder_t folderToFolder_t(Folder* folder) {
@@ -69,18 +70,18 @@ namespace fs {
             f->root_only,
             (uint32_t)f->memptr,
             (uint16_t)f->filesize,
-            (uint8_t)f->name->size(),
-            f->name->data()
+            (uint8_t)f->name.size(),
+            f->name.data()
         };
         return t;
     }
 
-    File File_tToFile(File_t* t) {
-        File f = *new File(t->name);
-        f.is_exec = t->is_exec;
-        f.root_only = t->root_only;
-        f.memptr = t->memptr;
-        f.filesize = t->filesize;
+    File* File_tToFile(File_t* t) {
+        File* f = new File(t->name);
+        f->is_exec = t->is_exec;
+        f->root_only = t->root_only;
+        f->memptr = t->memptr;
+        f->filesize = t->filesize;
         return f;
     }
 
@@ -103,33 +104,71 @@ namespace fs {
             return;
         }
         uint8_t type;
-        vector<Folder_t> folders;
+        vector<std::variant<Folder_t, File_t>> data;
         while (!ms.eof()) {
-        ms.read(reinterpret_cast<char*>(&type), sizeof(type));
-        switch (type) {
-            case 2:
-                folders.push_back(deserializeFolder(ms));
-                break;
-            case 1:
-            std::cout << "is file \n";
-                //deserializeFile(vector<uint8_t> data);
-                break;
-        }
-        }
-        // for (auto f : folders) {
-        //     std::cout << f.id << " " << f.parentid<< " "  << f.rootonly << " " << std::string(f.name) << "\n";
-        // }
-        // TODO optimize
-        root = Folder_tToFolder(&folders.front());
-        for(Folder_t p : folders)
-            for(Folder_t f : folders) {
-                if(p.id == f.id) return;
-                if (p.id == f.parentid) {
-                    Folder* f = GetFolderById(p.id, root);
-                    f->folders.push_back(std::move(f));
-                }
-
+            ms.read(reinterpret_cast<char*>(&type), sizeof(type));
+            switch (type) {
+                case 1:
+                    data.push_back(deserializeFile(ms));
+                    break;
+                case 2:
+                    data.push_back(deserializeFolder(ms));
+                    break;
             }
+        }
+        std::unordered_map<int, Folder*> idToFolder;
+        for (const auto& item : data) {
+            if (std::holds_alternative<Folder_t>(item)) {
+                Folder_t f = std::get<Folder_t>(item);
+                Folder* folder = Folder_tToFolder(&f);
+                idToFolder[f.id] = folder;
+
+                if (f.parentid == (uint16_t)-1) {
+                    root = folder;
+                }
+            }
+        }
+        for (const auto& item : data) {
+            if (std::holds_alternative<Folder_t>(item)) {
+                const auto& folder_t = std::get<Folder_t>(item);
+                if (folder_t.parentid != (uint16_t)-1) { // Не корневая папка
+                    if (auto parentIt = idToFolder.find(folder_t.parentid);
+                        parentIt != idToFolder.end()) {
+                        parentIt->second->folders.push_back(idToFolder[folder_t.id]);
+                    }
+                }
+            }
+            else { // File_t
+                auto file_t = std::get<File_t>(item);
+                if (auto parentIt = idToFolder.find(file_t.parentid);
+                    parentIt != idToFolder.end()) {
+                    parentIt->second->files.push_back(File_tToFile(&file_t));
+                }
+            }
+        }
+        // auto front = std::get<Folder_t>(data.front());
+        // root = Folder_tToFolder(&front);
+        // for(auto _p : data) {
+        //     if (std::holds_alternative<File_t>(_p)) continue;
+        //     for(auto _f : data) {
+        //         auto p = std::get<Folder_t>(_p);
+        //         if (std::holds_alternative<Folder_t>(_f)) {
+        //             auto f = std::get<Folder_t>(_f);
+        //             if(p.id == f.id) continue;
+        //             if (p.id == f.parentid) {
+        //                 Folder* folder = GetFolderById(p.id, root);
+        //                 folder->folders.push_back(Folder_tToFolder(&f));
+        //             }
+        //         }
+        //         else { // is file_t
+        //             auto f = std::get<File_t>(_f);
+        //             if (p.id == f.parentid) {
+        //                 Folder* folder = GetFolderById(p.id, root);
+        //                 folder->files.push_back(File_tToFile(&f));
+        //             }
+        //         }
+        //     }
+        // }
 
         ms.close();
     }
@@ -140,9 +179,6 @@ namespace fs {
             std::cout << "failed to open meta file";
             return nullptr;
         }
-
-
-
         ds.close();
         return nullptr; // TODO
     }
@@ -153,29 +189,41 @@ namespace fs {
         for (auto d : folderData) {
             std::cout << stoi(std::to_string(d)) << " ";
         }
-        std::cout << std::endl;
+        std::cout << "\n";
         out.write(reinterpret_cast<const char*>(folderData.data()), folderData.size());
         if (!f->folders.empty())
-        for (auto f : f->folders) {
-            serialize(f, out);
-        }
+            for (auto f : f->folders) {
+                serialize(f, out);
+            }
+        if (!f->files.empty())
+            for (auto f : f->files) {
+                auto s = serializeFile(f);
+                out.write(reinterpret_cast<const char*>(s.data()), s.size());
+            }
     }
-
     void FS::saveAllMeta() {
         std::ofstream out(meta, std::ios::binary);
         if (!out) throw std::runtime_error("Cannot open file");
-
         serialize(root,out);
-
     }
 
 
     //it cant be implement yet
-    // void FS::saveMetaFolder(Folder* f) {
-
-    // }
-    // void FS::saveMetaFile(File* f) {}
-    void FS::saveDataFile() {}
+    void FS::saveMetaFolder(Folder* f) {
+        std::ofstream out(meta, std::ios::binary | std::ios::app);
+        if (!out) throw std::runtime_error("Cannot open file");
+        auto data = serializeFolder(f);
+        out.write(reinterpret_cast<const char*>(data.data()), data.size());
+        out.close();
+    }
+     void FS::saveMetaFile(File* f) {
+         std::ofstream out(meta, std::ios::binary | std::ios::app);
+         if (!out) throw std::runtime_error("Cannot open file");
+         auto data = serializeFile(f);
+         out.write(reinterpret_cast<const char*>(data.data()), data.size());
+         out.close();
+     }
+    //void FS::saveDataFile() {}
 #pragma endregion
 
 #pragma region serializing
@@ -223,20 +271,12 @@ namespace fs {
         buffer.push_back(i);
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&f.id);
            buffer.insert(buffer.end(), ptr, ptr + sizeof(f.id));
-
-           // Добавляем parentid
            ptr = reinterpret_cast<const uint8_t*>(&f.parentid);
            buffer.insert(buffer.end(), ptr, ptr + sizeof(f.parentid));
-
-           // Добавляем rootonly
            ptr = reinterpret_cast<const uint8_t*>(&f.rootonly);
            buffer.insert(buffer.end(), ptr, ptr + sizeof(f.rootonly));
-
-           // Добавляем namesize
            ptr = reinterpret_cast<const uint8_t*>(&f.namesize);
            buffer.insert(buffer.end(), ptr, ptr + sizeof(f.namesize));
-           std::cout << *ptr;
-           // Добавляем имя
            buffer.insert(buffer.end(), f.name, f.name + f.namesize);
         return buffer;
     }
@@ -246,21 +286,17 @@ namespace fs {
         in.read(reinterpret_cast<char*>(&t.parentid), sizeof(t.parentid));
         in.read(reinterpret_cast<char*>(&t.rootonly), sizeof(t.rootonly));
         in.read(reinterpret_cast<char*>(&t.namesize), sizeof(t.namesize));
-        // std::string n;
-        // n.resize(t.namesize);
-        // in.read(&n[0], t.namesize);
-        // t.name = n.data();
         t.name = new char[t.namesize + 1];
-           in.read(t.name, t.namesize);
-           t.name[t.namesize] = '\0';  // Добавляем нуль-терминатор
-       // return Folder_tToFolder(&t);
+        in.read(t.name, t.namesize);
+        t.name[t.namesize] = '\0';
         return t;
     }
 
-    vector<uint8_t> FS::serializeFile(File &file) {
-        File_t f = FileToFile_t(&file);
+    vector<uint8_t> FS::serializeFile(File *file) {
+        File_t f = FileToFile_t(file);
         vector<uint8_t> buffer; // file type
         uint8_t* ptr;
+        buffer.push_back(1);
         ptr = reinterpret_cast<uint8_t*>(&f.parentid);
         buffer.insert(buffer.end(), ptr, ptr + sizeof(f.parentid));
         ptr = reinterpret_cast<uint8_t*>(&f.is_exec);
@@ -273,48 +309,25 @@ namespace fs {
         buffer.insert(buffer.end(), ptr, ptr + sizeof(f.filesize));
         ptr = reinterpret_cast<uint8_t*>(&f.namesize);
         buffer.insert(buffer.end(), ptr, ptr + sizeof(f.namesize));
-        ptr = reinterpret_cast<uint8_t*>(f.name);
-        buffer.insert(buffer.end(), ptr, ptr + f.namesize);
+        buffer.insert(buffer.end(), f.name, f.name + f.namesize);
+
+        // for (auto b : buffer)
+        // std::cout << std::to_string(b) << " ";
         return buffer;
     }
 
-    File_t FS::deserializeFile(vector<uint8_t> data) {
+    File_t FS::deserializeFile(std::ifstream& in) {
         File_t t ;
-        size_t offset = 0;
-
-        if (offset + sizeof(t.parentid) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.parentid, data.data() + offset,sizeof(t.parentid));
-        offset += sizeof(t.parentid);
-        if (offset + sizeof(t.is_exec) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.is_exec, data.data() + offset,sizeof(t.is_exec));
-        offset += sizeof(t.is_exec);
-        if (offset + sizeof(t.root_only) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.root_only, data.data() + offset,sizeof(t.root_only));
-        offset += sizeof(t.root_only);
-        if (offset + sizeof(t.memptr) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.memptr, data.data() + offset,sizeof(t.memptr));
-        offset += sizeof(t.memptr);
-        if (offset + sizeof(t.filesize) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.filesize, data.data() + offset,sizeof(t.filesize));
-        offset += sizeof(t.filesize);
-        if (offset + sizeof(t.namesize) > data.size()) {
-            throw std::runtime_error("Invalid buffer: pid overflow");
-        }
-        memcpy(&t.namesize, data.data() + offset,sizeof(t.namesize));
-        offset += sizeof(t.namesize);
+        in.read(reinterpret_cast<char*>(&t.parentid), sizeof(t.parentid));
+        in.read(reinterpret_cast<char*>(&t.is_exec), sizeof(t.is_exec));
+        in.read(reinterpret_cast<char*>(&t.root_only), sizeof(t.root_only));
+        in.read(reinterpret_cast<char*>(&t.memptr), sizeof(t.memptr));
+        in.read(reinterpret_cast<char*>(&t.filesize), sizeof(t.filesize));
+        in.read(reinterpret_cast<char*>(&t.namesize), sizeof(t.namesize));
         t.name = new char[t.namesize + 1];
-        memcpy(t.name, data.data() + offset, t.namesize);
+        in.read(t.name, t.namesize);
         t.name[t.namesize] = '\0';
+        //std::cout << t.parentid  << " " << t.is_exec << " " << t.root_only << " " << t.memptr << " " << t.filesize << " " << t.namesize;
         return t;
     }
 #pragma endregion
@@ -329,8 +342,8 @@ namespace fs {
             parent->folders.push_back(f);
         return f;
     }
-    Folder* FS::editFolderName(Folder* folder, std::string* new_name) {
-        folder->name.replace(0, folder->name.length(), *new_name);
+    Folder* FS::editFolderName(Folder* folder, std::string new_name) {
+        folder->name.replace(0, folder->name.length(),new_name);
         return folder;
     }
     void FS::deleteFolder(Folder* folder) {
@@ -338,17 +351,16 @@ namespace fs {
         delete folder;
     }
 
-    File* FS::createFile(Folder* parent, std::string* name) {
+    File* FS::createFile(Folder* parent, std::string name) {
         File* f = new File(name);
         f->parent = parent;
         f->root_only = false;
         f->is_exec = false;
         parent->files.push_back(f);
-
         return f;
     }
-    File* FS::renameFile(File* file, std::string* new_name) {
-        file->name->replace(0, file->name->length(), *new_name);
+    File* FS::renameFile(File* file, std::string new_name) {
+        file->name.replace(0, file->name.length(), new_name);
         return file;
     }
     void FS::deleteFile(File* file) {

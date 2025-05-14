@@ -1,7 +1,5 @@
 #include "terminal.h"
 #include "core.h"
-#include <cstdio>
-#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -35,28 +33,29 @@ inline void sysinfo(const char* s) {
     }
     int ls(std::string p) {
         auto folderlist = g_falos_core.m_current_folder->folders;
+        std::cout << " -- Folders -- \n";
         if (!folderlist.empty())
             for(auto f : folderlist)
-                std::cout << f->name << "(" << f << ") ";
-        std::cout << "\n \n";
+                std::cout << f->name << " " << f;
+        std::cout << "\n -- Files -- \n";
         auto filelist = g_falos_core.m_current_folder->files;
         if (!filelist.empty())
             for(auto f : filelist)
-                std::cout << *f->name << " ";
+                std::cout << f->name << " " << f;
+        std::cout << "\n";
+
         return 0;
     }
     int mkdir(std::string p) {
         auto f = g_falos_core.fs->createFolder(g_falos_core.m_current_folder, p);
-        std::cout << f->parent->name << f->name;
+        g_falos_core.fs->saveMetaFolder(f);
         return 0;
     }
     int cd(std::string p) {
         fs::Folder* f = g_falos_core.fs->getFolderByPath(p,g_falos_core.m_current_folder);
-        std::cout << f->name;
         if (!f)
             return 1;
         g_falos_core.m_current_folder = f;
-        std::cout << g_falos_core.m_current_folder->name;
         return 0;
     }
     int rm(std::string p) {
@@ -66,10 +65,21 @@ inline void sysinfo(const char* s) {
         return 0;
     }
 
+    int touch(std::string p) {
+        fs::File* f = g_falos_core.fs->createFile(g_falos_core.m_current_folder, p);
+        g_falos_core.fs->saveMetaFile(f);
+        return 0;
+    }
+    int save(std::string p) {
+        g_falos_core.fs->saveAllMeta();
+        return 0;
+    }
+
+
 #pragma endregion
 
 Terminal::Terminal() {
-   // commands["help"] = help;
+    //commands["save"] = save;
     commands["shut"] = shut;
     commands["echo"] = echo;
     commands["gr"] = gr;
@@ -78,6 +88,7 @@ Terminal::Terminal() {
     commands["mkdir"] = mkdir;
     commands["cd"] = cd;
     commands["rm"] = rm;
+    commands["touch"] = touch;
 
 }
 

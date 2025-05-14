@@ -34,19 +34,17 @@ namespace fs {
         Folder* root;
 
         Folder* createFolder(Folder* parent, std::string name);
-        Folder* editFolderName(Folder* folder, std::string* new_name);
+        Folder* editFolderName(Folder* folder, std::string new_name);
         void deleteFolder(Folder* folder);
 
-        File* createFile(Folder* parent, std::string* name);
-        File* renameFile(File* file, std::string* new_name);
+        File* createFile(Folder* parent, std::string name);
+        File* renameFile(File* file, std::string new_name);
         void deleteFile(File* file);
 
         vector<uint8_t> serializeFolder(Folder *folder);
         Folder_t deserializeFolder(std::ifstream& in);
-
-        vector<uint8_t> serializeFile(File &file);
-
-        File_t deserializeFile(vector<uint8_t> data);
+        vector<uint8_t> serializeFile(File *file);
+        File_t deserializeFile(std::ifstream& in);
     private:
         int m_id = 0;
         void CreateFS();
