@@ -33,6 +33,11 @@ namespace fs {
         else {
             loadMetaFromFile();
         }
+        if(!fileIsExist(data)){
+            sysinfo("data doesnt exist, creating data file");
+
+            std::ofstream df(data);
+        }
     }
     FS::~FS() {}
 
@@ -51,7 +56,8 @@ namespace fs {
             folder->parent ? (uint16_t)(folder->parent->id) : (uint16_t)-1,
             folder->root_only,
             (uint8_t)(folder->name.length()),
-            folder->name.data()
+            folder->name.data(),
+            folder->fsptr
         };
         return f;
     }
@@ -59,7 +65,7 @@ namespace fs {
         Folder* f = new Folder(folder->name);
         f->id = folder->id;
         f->root_only = folder->rootonly;
-        //f.parent = getFolderByID(folder->parentid);
+        f->fsptr = folder->fsptr;
         return f;
     }
 
@@ -71,7 +77,8 @@ namespace fs {
             (uint32_t)f->memptr,
             (uint16_t)f->filesize,
             (uint8_t)f->name.size(),
-            f->name.data()
+            f->name.data(),
+            f->fsptr
         };
         return t;
     }
@@ -82,6 +89,7 @@ namespace fs {
         f->root_only = t->root_only;
         f->memptr = t->memptr;
         f->filesize = t->filesize;
+        f->fsptr = t->fsptr;
         return f;
     }
 
@@ -114,6 +122,7 @@ namespace fs {
                 case 2:
                     data.push_back(deserializeFolder(ms));
                     break;
+                    default: continue;
             }
         }
         std::unordered_map<int, Folder*> idToFolder;
@@ -146,41 +155,7 @@ namespace fs {
                 }
             }
         }
-        // auto front = std::get<Folder_t>(data.front());
-        // root = Folder_tToFolder(&front);
-        // for(auto _p : data) {
-        //     if (std::holds_alternative<File_t>(_p)) continue;
-        //     for(auto _f : data) {
-        //         auto p = std::get<Folder_t>(_p);
-        //         if (std::holds_alternative<Folder_t>(_f)) {
-        //             auto f = std::get<Folder_t>(_f);
-        //             if(p.id == f.id) continue;
-        //             if (p.id == f.parentid) {
-        //                 Folder* folder = GetFolderById(p.id, root);
-        //                 folder->folders.push_back(Folder_tToFolder(&f));
-        //             }
-        //         }
-        //         else { // is file_t
-        //             auto f = std::get<File_t>(_f);
-        //             if (p.id == f.parentid) {
-        //                 Folder* folder = GetFolderById(p.id, root);
-        //                 folder->files.push_back(File_tToFile(&f));
-        //             }
-        //         }
-        //     }
-        // }
-
         ms.close();
-    }
-    unsigned char* FS::loadDataFromfile(File* file) {
-        std::ifstream ds(data);
-
-        if (!ds.is_open()) {
-            std::cout << "failed to open meta file";
-            return nullptr;
-        }
-        ds.close();
-        return nullptr; // TODO
     }
 
     void FS::serialize(Folder* f, std::ofstream& out) {
@@ -223,12 +198,68 @@ namespace fs {
          out.write(reinterpret_cast<const char*>(data.data()), data.size());
          out.close();
      }
-    //void FS::saveDataFile() {}
+    void FS::saveDataFile(File* f, vector<uint8_t> d) {
+        std::fstream out;
+        if (!f) {  // Проверка на нулевой указатель
+            throw std::invalid_argument("File pointer is null");
+        }
+        if (d.empty()) {  // Проверка на пустые данные
+            return;  // или можно бросить исключение
+        }
+        if (f->memptr == 0) {
+            out.open(data,  std::ios::binary | std::ios::app);
+            out.seekp(0,std::ios::end);
+            f->memptr = out.tellp();
+            f->filesize = d.size();
+           // std::cout << f->memptr << " /n";
+        }
+        else {
+            out.open(data, std::ios::binary | std::ios::out);
+            out.seekp(f->memptr);
+        }
+        out.write(reinterpret_cast<char*>(d.data()), d.size());
+        out.close();
+    }
+
+    std::string FS::GetFileData(File* f) {
+        std::ifstream in(data, std::ios::binary);
+
+        in.seekg(f->memptr);
+        char* buf = new char[f->filesize + 1];
+        in.read(buf, f->filesize);
+        buf[f->filesize] = '\0';
+
+        in.close();
+        return std::string(buf);
+    }
 #pragma endregion
 
 #pragma region serializing
 
-
+    // void FS::removeObjectFromData(File* f) {
+    //     std::ofstream out(data, std::ios::binary | std::ios::out);
+    //     out.seekp(f->fsptr);
+    //     out.write(0,f->filesize);
+    // }
+    void FS::removeFromMeta(Folder* folder) {
+        std::ofstream out(meta, std::ios::binary | std::ios::out);
+        size_t s = 2+2+1+1+2+folder->name.length(); //folder_t size
+        out.seekp(0, std::ios::end);
+        size_t filesize = out.tellp();
+        out.seekp(folder->fsptr);
+        if (s + folder->fsptr > filesize) {
+            std::runtime_error("size too high");
+        }
+        //todo
+        out.close();
+    }
+    void FS::removeFromMeta(File* file) {
+        std::ofstream out(meta, std::ios::binary | std::ios::out);
+        out.seekp(file->fsptr);
+        size_t s = file->name.length()+2+1+1+4+2+1+2; //folder_t size
+        out.write(0,s);
+        out.close();
+    }
     inline Folder* getChild(std::string name, Folder* p) {
         for(auto f : p->folders)
             if (f->name == name)
@@ -282,6 +313,7 @@ namespace fs {
     }
     Folder_t FS::deserializeFolder(std::ifstream& in) {
         Folder_t t ;
+        t.fsptr = in.tellg();
         in.read(reinterpret_cast<char*>(&t.id), sizeof(t.id));
         in.read(reinterpret_cast<char*>(&t.parentid), sizeof(t.parentid));
         in.read(reinterpret_cast<char*>(&t.rootonly), sizeof(t.rootonly));
@@ -318,6 +350,7 @@ namespace fs {
 
     File_t FS::deserializeFile(std::ifstream& in) {
         File_t t ;
+        t.fsptr = in.tellg();
         in.read(reinterpret_cast<char*>(&t.parentid), sizeof(t.parentid));
         in.read(reinterpret_cast<char*>(&t.is_exec), sizeof(t.is_exec));
         in.read(reinterpret_cast<char*>(&t.root_only), sizeof(t.root_only));

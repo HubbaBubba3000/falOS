@@ -1,6 +1,15 @@
 # falOS
-toy command operating system with own file system and programs
+A fully self-descriptive toy operating system with its own file system and the ability to execute machine code.
 
-TODO:
-  - make file storage
-  - make execute files from storage
+## capabilities:
+  - create folders and files
+  - navigate in file system
+  - write data to files
+
+
+## TODO:
+  - create and save user data
+  - remove and edit folders and files
+  - import and creating programs
+  - permisions system
+  - refactoring code !!

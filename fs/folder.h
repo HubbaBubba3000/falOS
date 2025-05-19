@@ -12,8 +12,9 @@ namespace fs {
         uint16_t id;
         uint16_t parentid;
         bool rootonly;
-        uint8_t namesize;
+        uint8_t namesize; // max 256 letter
         char* name;
+        uint16_t fsptr;
     };
 
     class Folder {
@@ -34,7 +35,6 @@ namespace fs {
 
       std::string name;
       bool root_only;
-
-      std::string getpath();
+    uint16_t fsptr; // position in storage
     };
 }

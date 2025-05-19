@@ -14,6 +14,7 @@ namespace fs {
         uint16_t filesize; //max 64kib
         uint8_t namesize;
         char* name;
+        uint16_t fsptr;
     };
 
     class File {
@@ -30,6 +31,6 @@ namespace fs {
         int memptr;
         size_t filesize;
         std::string* getpath();
-
+        uint16_t fsptr;
     };
 }

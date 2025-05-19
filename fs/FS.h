@@ -19,7 +19,7 @@ namespace fs {
         std::string data;
 
         void loadMetaFromFile();
-        unsigned char* loadDataFromfile(File* file);
+        //unsigned char* loadDataFromfile(File* file);
 
         Folder* getFolderByPath(std::string path, Folder* o = nullptr);
         std::string getPathByFolder(Folder* folder);
@@ -27,7 +27,9 @@ namespace fs {
         void saveAllMeta();
         void saveMetaFolder(Folder* f);
         void saveMetaFile(File* f);
-        void saveDataFile();
+        void saveDataFile(File* f, vector<uint8_t> d);
+
+        std::string GetFileData(File* f);
 
         //void trimstorage();
 
@@ -45,6 +47,8 @@ namespace fs {
         Folder_t deserializeFolder(std::ifstream& in);
         vector<uint8_t> serializeFile(File *file);
         File_t deserializeFile(std::ifstream& in);
+        void removeFromMeta(Folder* folder);
+        void removeFromMeta(File* file);
     private:
         int m_id = 0;
         void CreateFS();
