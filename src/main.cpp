@@ -1,7 +1,6 @@
-
-
 #include "core/core.h"
 int main() {
-    core::Core core = core::Core();
+    core::Core::instance().Init();
+    core::Core::instance().Run();
     return 0;
 }

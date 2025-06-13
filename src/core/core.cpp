@@ -3,21 +3,27 @@
 #include "../terminal/terminal.h"
 #include "../execution/busybox.h"
 #include "../global.h"
+#include "message.h"
+#include <memory>
 
 namespace core {
 
-    Core::Core() {
-        mb = new MessageBroker(&modules);
-        modules[MODULE_TERMINAL] = new terminal::Terminal(mb);
-        modules[MODULE_BUSYBOX] = new execution::BusyBox(mb);
+    Core::Core() {}
+    void Core::Init() {
+        modules[MODULE_TERMINAL] = new terminal::Terminal();
+        modules[MODULE_BUSYBOX] = new execution::BusyBox();
 
-        while (true) {
+        mb = std::make_unique<MessageBroker>(&modules);
+    }
+    void Core::Run() {
+        while (!shutdown) {
             ((terminal::Terminal*)modules[MODULE_TERMINAL])->InputCommand();
         }
 
     }
-    void Core::Request(uint8_t mid, void* msg) {
+    void Core::Request(int mid, Message msg) {
         mb->SendMessage(mid, msg);
     }
     Core::~Core() {}
+
 }

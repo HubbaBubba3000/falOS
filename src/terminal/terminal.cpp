@@ -5,19 +5,18 @@
 #include <variant>
 #include <vector>
 #include "../global.h"
-#include "../core/MessageBroker.h"
 #include "../core/core.h"
 
 namespace terminal {
-    Terminal::Terminal(core::MessageBroker* mb) {
-        //std::ios_base::sync_with_stdio(false);
+    Terminal::Terminal() {
+        std::ios_base::sync_with_stdio(false);
     }
     Terminal::~Terminal() {
 
     }
     void Terminal::InputCommand() {
         std::string line;
-        std::cout <<  ">" ;
+        std::cout << "\n>" ;
         std::getline(std::cin, line);
         Command c;
         int i = line.find(" "); // end command pos
@@ -25,18 +24,21 @@ namespace terminal {
         c.params = *new std::vector<std::string>(1);
         c.params.push_back("ghj");
         //std::string ps = (i == std::variant_npos) ? " " : line->substr(i+1);
-        std::cout << c.command;
         SearchCommand(&c);
     }
     void Terminal::SearchCommand(Command* command) {
-       core::Core::instance().Request(MODULE_BUSYBOX, command);
+        core::Message msg;
+        msg.module_sender = MODULE_TERMINAL;
+        msg.module_receiver = MODULE_BUSYBOX;
+        msg.payload = command->command;
+       core::Core::instance().Request(MODULE_BUSYBOX, msg);
     }
     void Terminal::Print(char* s) {
         std::cout << s;
     }
 
-    void Terminal::Request(void* msg) {
-        Print(((char*)msg));
+    void Terminal::Request(core::Message msg) {
+        std::cout << msg.payload;
     }
 
 }

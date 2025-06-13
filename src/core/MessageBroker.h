@@ -1,15 +1,16 @@
 #pragma once
 #include "Module.h"
+#include "message.h"
 #include <cstdint>
 #include <unordered_map>
 namespace core {
     class MessageBroker {
         public:
-        MessageBroker(std::unordered_map<uint8_t, Module*>* mm);
+        MessageBroker(std::unordered_map<int, Module*>* mm);
 
-        void SendMessage(uint8_t mid, void* msg); // todo void* to msg struct
+        void SendMessage(int mid, Message msg); // todo void* to msg struct
 
         private:
-            std::unordered_map<uint8_t, Module*>* modulemap;
+            std::unordered_map<int, Module*>* modulemap;
     };
 }

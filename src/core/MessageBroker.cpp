@@ -1,16 +1,15 @@
 
 #include "MessageBroker.h"
+#include "message.h"
 #include "Module.h"
-#include <cstdint>
-#include <iostream>
+#include <cstdio>
 namespace core {
 
-    MessageBroker::MessageBroker(std::unordered_map<uint8_t, Module*>* mm) : modulemap(mm){};
+    MessageBroker::MessageBroker(std::unordered_map<int, Module*>* mm) : modulemap(mm){ };
 
-    void MessageBroker::SendMessage(uint8_t mid, void* msg) {
-        std::cout << mid << msg << "\n";
-        if (auto it = modulemap->find(mid); it != modulemap->end()) {
-                        it->second->Request(msg);
-                    }
+    void MessageBroker::SendMessage(int mid, Message msg) {
+        auto it = modulemap->find(mid) ;
+        if (!it->second) perror("module not found");
+            it->second->Request(msg);
     }
 }

@@ -1,6 +1,4 @@
 #include "busybox.h"
-#include "../core/MessageBroker.h"
-#include "../terminal/command.h"
 #include "../core/core.h"
 #include <string>
 #include "../global.h"
@@ -9,17 +7,25 @@
 namespace execution {
 
     int BusyBox::info(std::string p) {
-        core::Core::instance().Request(MODULE_TERMINAL, (void*)"falOS ver 0.1 \n");
+        core::Message msg;
+        msg.module_sender = MODULE_BUSYBOX;
+        msg.module_receiver = MODULE_TERMINAL;
+        msg.payload = "falOS ver 0.1";
+        core::Core::instance().Request(MODULE_TERMINAL, msg);
 
         return 0;
     }
-    void BusyBox::Request(void* msg) {
-        auto m = (terminal::Command*)msg;
-        int code = commands[m->command](m->params[0]);
+    int BusyBox::shut(std::string p) {
+        core::Core::instance().shutdown = true;
+        return 0;
     }
-    BusyBox::BusyBox(core::MessageBroker* mb) {
+    void BusyBox::Request(core::Message msg) {
+        auto m = msg;
+        int code = commands[m.payload]("");
+    }
+    BusyBox::BusyBox() {
         //commands[" *URCMD* "] = [this](std::string p) { return this-> *URCMD* (p);};
-
+        commands["shut"] = [this](std::string p) { return this->shut(p);};
         commands["info"] = [this](std::string p) { return this->info(p);};
     }
 }

@@ -12,11 +12,12 @@ namespace execution {
     /// standart commands
     class BusyBox : public core::Module {
         public:
-            BusyBox(core::MessageBroker* mb);
-            void Request(void* msg) override;
+            BusyBox();
+            void Request(core::Message msg) override;
         private:
             command_map commands;
             //command list
             int info(std::string p);
+            int shut(std::string p);
     };
 }

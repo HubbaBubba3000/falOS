@@ -7,12 +7,12 @@
 namespace terminal {
     class Terminal : public core::Module {
         public:
-            Terminal(core::MessageBroker* mb);
+            Terminal();
             ~Terminal();
             void InputCommand();
             void SearchCommand(Command* command);
             void Print(char* s);
-            void Request(void* msg) override;
+            void Request(core::Message msg) override;
 
     };
 }
