@@ -1,5 +1,6 @@
 #include "busybox.h"
 #include "../core/core.h"
+#include <iostream>
 #include <string>
 #include "../global.h"
 
@@ -21,7 +22,14 @@ namespace execution {
     }
     void BusyBox::Request(core::Message msg) {
         auto m = msg;
-        int code = commands[m.payload]("");
+        int code;
+        if (auto it = commands.find(m.payload); it == nullptr) {
+            std::cout << "command not found";
+            code = 1;
+            return;
+        }
+
+        code = commands[m.payload]("");
     }
     BusyBox::BusyBox() {
         //commands[" *URCMD* "] = [this](std::string p) { return this-> *URCMD* (p);};

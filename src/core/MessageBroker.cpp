@@ -2,7 +2,8 @@
 #include "MessageBroker.h"
 #include "message.h"
 #include "Module.h"
-#include <cstdio>
+#include "../global.h"
+#include <iostream>
 namespace core {
 
     MessageBroker::MessageBroker(std::unordered_map<int, Module*>* mm) : modulemap(mm){ };
