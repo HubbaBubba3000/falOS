@@ -9,10 +9,10 @@ namespace terminal {
         public:
             Terminal();
             ~Terminal();
+            void Request(core::Message msg) override;
             void InputCommand();
+        private:
             void SearchCommand(Command* command);
             void Print(char* s);
-            void Request(core::Message msg) override;
-
     };
 }

@@ -18,10 +18,11 @@ namespace core {
             static Core instance;
             return instance;
         }
-
+        void Auth();
         void Init();
         void Run();
         void Request(int mid, Message msg) ;
+        void Request(Message msg) ;
         bool shutdown = false;
         private:
         ~Core();

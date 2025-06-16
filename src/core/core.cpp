@@ -24,6 +24,14 @@ namespace core {
     void Core::Request(int mid, Message msg) {
         mb->SendMessage(mid, msg);
     }
-    Core::~Core() {}
+    void Core::Request(Message msg) {
+        mb->SendMessage(msg.module_receiver, msg);
+    }
+    Core::~Core() {
+        modules.erase(modules.begin());
+        auto* m = mb.release();
+        free(m);
+
+    }
 
 }

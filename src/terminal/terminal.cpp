@@ -22,23 +22,20 @@ namespace terminal {
         int i = line.find(" "); // end command pos
         c.command = ((i == std::variant_npos) ? line : line.substr(0, i));
         c.params = *new std::vector<std::string>(1);
-        c.params.push_back("ghj");
-        //std::string ps = (i == std::variant_npos) ? " " : line->substr(i+1);
+        std::string ps = (i == std::variant_npos) ? " " : line.substr(i+1);
         SearchCommand(&c);
     }
     void Terminal::SearchCommand(Command* command) {
-        core::Message msg;
-        msg.module_sender = MODULE_TERMINAL;
-        msg.module_receiver = MODULE_BUSYBOX;
-        msg.payload = command->command;
-       core::Core::instance().Request(MODULE_BUSYBOX, msg);
+        core::Message* msg = core::CreateMessage(MODULE_TERMINAL, MODULE_BUSYBOX, (void*)command);
+        core::Core::instance().Request(*msg);
     }
+
     void Terminal::Print(char* s) {
         std::cout << s;
     }
 
     void Terminal::Request(core::Message msg) {
-        std::cout << msg.payload;
+        std::cout << (char*)msg.payload;
     }
 
 }
